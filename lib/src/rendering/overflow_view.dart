@@ -58,6 +58,11 @@ enum OverflowViewLayoutBehavior {
   ///
   /// Displays its children in multiple horizontal or vertical runs.
   wrap,
+
+  /// Let all children to determine their own size.
+  ///
+  /// Displays its children in multiple horizontal or vertical runs.
+  wrapWithLeading,
 }
 
 class RenderOverflowView extends RenderBox
@@ -318,6 +323,9 @@ class RenderOverflowView extends RenderBox
     }
   }
 
+  bool get hasLeading =>
+      layoutBehavior == OverflowViewLayoutBehavior.wrapWithLeading;
+
   bool get _debugHasNecessaryDirections {
     if (firstChild != null && lastChild != firstChild) {
       // i.e. there's more than one child
@@ -448,6 +456,9 @@ class RenderOverflowView extends RenderBox
         performFlexibleLayout();
         break;
       case OverflowViewLayoutBehavior.wrap:
+        performWrapLayout();
+        break;
+      case OverflowViewLayoutBehavior.wrapWithLeading:
         performWrapLayout();
         break;
     }
@@ -738,7 +749,13 @@ class RenderOverflowView extends RenderBox
       final double childMainAxisExtent = _getMainAxisExtent(child.size);
       final double childCrossAxisExtent = _getCrossAxisExtent(child.size);
 
-      final double childMainAxisStride = spacing + childMainAxisExtent;
+      final double childMainAxisStride;
+
+      if (hasLeading && runCount == 0 && childCount == 0) {
+        childMainAxisStride = childMainAxisExtent;
+      } else {
+        childMainAxisStride = spacing + childMainAxisExtent;
+      }
 
       double childCrossAxisStride = currentChildOffset.dy;
 
@@ -772,7 +789,10 @@ class RenderOverflowView extends RenderBox
             crossAxisExtent + childCrossAxisExtent + runSpacing >
                 crossAxisLimit) {
           // We have no room to paint any further child.
-          showOverflowIndicator = true;
+          if (maxRun == 1 && runMetrics.last.childCount == 1 && hasLeading)
+            showOverflowIndicator = false;
+          else
+            showOverflowIndicator = true;
           break;
         }
 
@@ -785,7 +805,11 @@ class RenderOverflowView extends RenderBox
       currentRunMainAxisExtent += childMainAxisExtent;
 
       if (childCount > 0) {
-        currentRunMainAxisExtent += spacing;
+        if (hasLeading && runCount == 0 && childCount < 2) {
+          // We do nothing
+        } else {
+          currentRunMainAxisExtent += spacing;
+        }
       }
 
       currentRunCrossAxisExtent =
@@ -796,7 +820,12 @@ class RenderOverflowView extends RenderBox
 
       childParentData.offstage = false;
       childParentData._runIndex = runMetrics.length;
-      renderBoxes.add(child);
+
+      if (hasLeading && runCount == 0 && childCount == 1) {
+        // We do nothing
+      } else {
+        renderBoxes.add(child);
+      }
 
       child = childParentData.nextSibling!;
 
@@ -845,8 +874,17 @@ class RenderOverflowView extends RenderBox
       int overflowIndicatorRunIndex = runMetrics.length - 1;
       bool isLastElement = false;
 
-      double overflowIndicatorMainAxisStride =
-          spacing + overflowIndicatorMainAxisExtent;
+      double overflowIndicatorMainAxisStride;
+
+      final bool onlyLeadingIsAvailable =
+          hasLeading && maxRun == 1 && runMetrics.last.childCount == 1;
+
+      if (onlyLeadingIsAvailable) {
+        overflowIndicatorMainAxisStride = overflowIndicatorMainAxisExtent;
+      } else {
+        overflowIndicatorMainAxisStride =
+            spacing + overflowIndicatorMainAxisExtent;
+      }
 
       if (overflowIndicatorMainAxisStride + runMetrics.last.mainAxisExtent <
               mainAxisLimit &&
@@ -875,10 +913,12 @@ class RenderOverflowView extends RenderBox
       } else {
         // We need to remove the children that prevent the overflowIndicator
         // to paint.
-        while (overflowIndicatorConstraints.value != unRenderedChildCount ||
-            runMetrics.last.childCount == maxItemPerRun ||
-            (overflowIndicatorMainAxisStride > overflowIndicatorMainAxisLimit &&
-                renderBoxes.isNotEmpty)) {
+        while (!onlyLeadingIsAvailable &&
+            renderBoxes.isNotEmpty &&
+            (overflowIndicatorConstraints.value != unRenderedChildCount ||
+                runMetrics.last.childCount == maxItemPerRun ||
+                overflowIndicatorMainAxisStride >
+                    overflowIndicatorMainAxisLimit)) {
           if (overflowIndicatorConstraints.value.toString().length !=
               unRenderedChildCount.toString().length) {
             // The number of unrendered child drastically changed

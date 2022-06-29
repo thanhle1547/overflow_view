@@ -77,6 +77,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
     Key? key,
     required OverflowIndicatorBuilder builder,
     Axis direction = Axis.horizontal,
+    Widget? leading,
     required List<Widget> children,
     WrapAlignment alignment = WrapAlignment.start,
     double spacing = 0,
@@ -91,6 +92,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
           key: key,
           builder: builder,
           direction: direction,
+          leading: leading,
           children: children,
           alignment: alignment,
           spacing: spacing,
@@ -101,13 +103,16 @@ class OverflowView extends MultiChildRenderObjectWidget {
           maxItemPerRun: maxItemPerRun,
           textDirection: textDirection,
           verticalDirection: verticalDirection,
-          layoutBehavior: OverflowViewLayoutBehavior.wrap,
+          layoutBehavior: leading == null
+              ? OverflowViewLayoutBehavior.wrap
+              : OverflowViewLayoutBehavior.wrapWithLeading,
         );
 
   OverflowView._all({
     Key? key,
     required OverflowIndicatorBuilder builder,
     this.direction = Axis.horizontal,
+    Widget? leading,
     required List<Widget> children,
     this.alignment = WrapAlignment.start,
     this.spacing = 0,
@@ -125,6 +130,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
         super(
           key: key,
           children: [
+            if (leading != null) leading,
             ...children,
             ValueLayoutBuilder<int>(
               builder: (context, constraints) {

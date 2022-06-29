@@ -203,6 +203,40 @@ class _MyHomePageState extends State<MyHomePage> {
                               ],
                             ),
                           ),
+                          Container(
+                            width: 180,
+                            height: 78,
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              border: Border.all(
+                                color: Colors.blue.shade100,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: OverflowView.wrap(
+                              maxRun: 2,
+                              builder: (context, remainingItemCount) => Chip(
+                                label: Text("+$remainingItemCount"),
+                                backgroundColor: Colors.red,
+                              ),
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              leading: Text("People's names:  "),
+                              children: [
+                                for (int i = 0; i < _counter; i++)
+                                  Chip(
+                                    label: Text(
+                                      avatars[i].initials,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    backgroundColor: avatars[i].color,
+                                  ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     )
