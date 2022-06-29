@@ -1,3 +1,7 @@
+## 0.5.0
+### Enhancement
+* Add leading to `OverflowView.wrap` constructor
+
 ## 0.4.0
 ### Enhancement
 * [Wrapped items](https://github.com/letsar/overflow_view/issues/2)
