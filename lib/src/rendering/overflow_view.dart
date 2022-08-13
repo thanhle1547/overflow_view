@@ -65,6 +65,11 @@ enum OverflowViewLayoutBehavior {
   wrapWithLeading,
 }
 
+typedef _ReportRenderObjectVisitor = bool Function(
+  RenderBox child,
+  OverflowViewParentData childParentData,
+);
+
 class RenderOverflowView extends RenderBox
     with
         ContainerRenderObjectMixin<RenderBox, OverflowViewParentData>,
@@ -1285,10 +1290,42 @@ class RenderOverflowView extends RenderBox
 
   void visitOnlyOnStageChildren(RenderObjectVisitor visitor) {
     visitChildren((child) {
-      if (child.isOnstage) {
+      final OverflowViewParentData childParentData =
+          child.parentData! as OverflowViewParentData;
+      if (childParentData.offstage == false) {
         visitor(child);
       }
     });
+  }
+
+  void _visitTheFirstAndTheOnlyOnStageChildReportedHitTest(
+    _ReportRenderObjectVisitor visitor, {
+    bool startFromLastChild = false,
+  }) {
+    RenderBox? child = startFromLastChild ? lastChild : firstChild;
+    while (child != null) {
+      final OverflowViewParentData childParentData =
+          child.parentData! as OverflowViewParentData;
+
+      if (child.hasSize && childParentData.offstage == false) {
+        if (visitor(child, childParentData)) return;
+      }
+
+      child = startFromLastChild
+          ? childParentData.previousSibling
+          : childParentData.nextSibling;
+    }
+  }
+
+  void _visitFirstChildReportedHitTest(_ReportRenderObjectVisitor visitor) {
+    if (!spacing.isNegative) {
+      _visitTheFirstAndTheOnlyOnStageChildReportedHitTest(visitor);
+    } else {
+      _visitTheFirstAndTheOnlyOnStageChildReportedHitTest(
+        visitor,
+        startFromLastChild: true,
+      );
+    }
   }
 
   @override
@@ -1331,20 +1368,15 @@ class RenderOverflowView extends RenderBox
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
     // The x, y parameters have the top left of the node's box as the origin.
-    visitOnlyOnStageChildren((renderObject) {
-      final RenderBox child = renderObject as RenderBox;
-      final OverflowViewParentData childParentData =
-          child.parentData as OverflowViewParentData;
-      if (child.hasSize && childParentData.offstage == false) {
-        result.addWithPaintOffset(
-          offset: childParentData.offset,
-          position: position,
-          hitTest: (BoxHitTestResult result, Offset transformed) {
-            assert(transformed == position - childParentData.offset);
-            return child.hitTest(result, position: transformed);
-          },
-        );
-      }
+    _visitFirstChildReportedHitTest((child, childParentData) {
+      return result.addWithPaintOffset(
+        offset: childParentData.offset,
+        position: position,
+        hitTest: (BoxHitTestResult result, Offset transformed) {
+          assert(transformed == position - childParentData.offset);
+          return child.hitTest(result, position: transformed);
+        },
+      );
     });
 
     return false;
@@ -1385,9 +1417,4 @@ class RenderOverflowView extends RenderBox
       layoutBehavior,
     ));
   }
-}
-
-extension RenderObjectExtensions on RenderObject {
-  bool get isOnstage =>
-      (parentData as OverflowViewParentData).offstage == false;
 }

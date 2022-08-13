@@ -369,7 +369,10 @@ class _OverflowViewElement extends MultiChildRenderObjectElement {
   @override
   void debugVisitOnstageChildren(ElementVisitor visitor) {
     children.forEach((element) {
-      if (element.renderObject?.isOnstage == true) {
+      final OverflowViewParentData? childParentData =
+          element.renderObject?.parentData as OverflowViewParentData?;
+
+      if (childParentData?.offstage == true) {
         visitor(element);
       }
     });
