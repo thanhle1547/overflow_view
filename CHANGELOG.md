@@ -1,3 +1,7 @@
+## 0.4.1
+### Fixed
+* Overlapped Chip show shadow when pressed on another (spacing is negative)
+
 ## 0.4.0
 ### Enhancement
 * [Wrapped items](https://github.com/letsar/overflow_view/issues/2)
