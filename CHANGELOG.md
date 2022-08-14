@@ -1,3 +1,7 @@
+## 0.6.0
+### Enhancement
+* Implement stacked (effect) from top to bottom
+
 ## 0.5.1
 ### Fixed
 * Remove stacked effect apply to leading widget (when spacing is negative)
