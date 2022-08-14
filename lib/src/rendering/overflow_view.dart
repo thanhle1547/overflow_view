@@ -1163,12 +1163,16 @@ class RenderOverflowView extends RenderBox
         ? containerCrossAxisExtent - runLeadingSpace
         : runLeadingSpace;
 
+    late bool containLeading;
+
     RenderBox? child = firstChild;
     for (int i = 0; i < runCount; ++i) {
       final _RunMetrics metrics = runMetrics[i];
       final double runMainAxisExtent = metrics.mainAxisExtent;
       final double runCrossAxisExtent = metrics.crossAxisExtent;
       final int childCount = metrics.childCount;
+
+      containLeading = i == 0 && hasLeading;
 
       final double mainAxisFreeSpace =
           math.max(0.0, containerMainAxisExtent - runMainAxisExtent);
@@ -1232,12 +1236,17 @@ class RenderOverflowView extends RenderBox
           childMainPosition,
           crossAxisOffset + childCrossAxisOffset,
         );
-        if (flipMainAxis) {
-          childMainPosition -= childBetweenSpace;
-        } else {
-          childMainPosition += childMainAxisExtent + childBetweenSpace;
+        if (!containLeading) {
+          if (flipMainAxis) {
+            childMainPosition -= childBetweenSpace;
+          } else {
+            childMainPosition += childMainAxisExtent + childBetweenSpace;
+          }
+        } else if (!flipMainAxis) {
+          childMainPosition += childMainAxisExtent;
         }
         child = childParentData.nextSibling;
+        containLeading = false;
       }
 
       if (flipCrossAxis) {
