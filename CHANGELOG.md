@@ -1,3 +1,8 @@
+## 0.7.0
+### Enhancement
+* Implement limiting visible items
+* Implement right to left text direction on fixed layout
+
 ## 0.6.0
 ### Enhancement
 * Implement stacked (effect) from top to bottom
