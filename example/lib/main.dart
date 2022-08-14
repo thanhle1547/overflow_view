@@ -163,81 +163,112 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     SizedBox(width: 40),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "People's names",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          SizedBox(height: 16),
-                          Container(
-                            width: 190,
-                            height: 80,
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              border: Border.all(
-                                color: Colors.blue.shade100,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(18),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "People's names",
+                              style: TextStyle(fontSize: 16),
                             ),
-                            child: OverflowView.wrap(
-                              maxRun: 3,
-                              builder: (context, remainingItemCount) => Chip(
-                                label: Text("+$remainingItemCount"),
-                                backgroundColor: Colors.red,
+                            SizedBox(height: 16),
+                            Container(
+                              width: 190,
+                              height: 80,
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                border: Border.all(
+                                  color: Colors.blue.shade100,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(18),
                               ),
-                              children: [
-                                for (int i = 0; i < _counter; i++)
-                                  Chip(
-                                    label: Text(
-                                      avatars[i].initials,
-                                      style: TextStyle(
-                                        color: Colors.white,
+                              child: OverflowView.wrap(
+                                maxRun: 3,
+                                builder: (context, remainingItemCount) => Chip(
+                                  label: Text("+$remainingItemCount"),
+                                  backgroundColor: Colors.red,
+                                ),
+                                children: [
+                                  for (int i = 0; i < _counter; i++)
+                                    Chip(
+                                      label: Text(
+                                        avatars[i].initials,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                        ),
                                       ),
+                                      backgroundColor: avatars[i].color,
                                     ),
-                                    backgroundColor: avatars[i].color,
-                                  ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 180,
-                            height: 78,
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              border: Border.all(
-                                color: Colors.blue.shade100,
-                                width: 2,
+                                ],
                               ),
-                              borderRadius: BorderRadius.circular(18),
                             ),
-                            child: OverflowView.wrap(
-                              maxRun: 2,
-                              builder: (context, remainingItemCount) => Chip(
-                                label: Text("+$remainingItemCount"),
-                                backgroundColor: Colors.red,
+                            SizedBox(height: 24),
+                            Container(
+                              width: 180,
+                              height: 78,
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                border: Border.all(
+                                  color: Colors.blue.shade100,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(18),
                               ),
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              leading: Text("People's names:  "),
-                              children: [
-                                for (int i = 0; i < _counter; i++)
-                                  Chip(
-                                    label: Text(
-                                      avatars[i].initials,
-                                      style: TextStyle(
-                                        color: Colors.white,
+                              child: OverflowView.wrap(
+                                maxRun: 2,
+                                builder: (context, remainingItemCount) => Chip(
+                                  label: Text("+$remainingItemCount"),
+                                  backgroundColor: Colors.red,
+                                ),
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                leading: Text("People's names:  "),
+                                children: [
+                                  for (int i = 0; i < _counter; i++)
+                                    Chip(
+                                      label: Text(
+                                        avatars[i].initials,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                        ),
                                       ),
+                                      backgroundColor: avatars[i].color,
                                     ),
-                                    backgroundColor: avatars[i].color,
-                                  ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                            SizedBox(height: 24),
+                            Text(
+                              "Limited visible people's names",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            SizedBox(height: 16),
+                            SizedBox(
+                              width: 200,
+                              child: OverflowView.limitedVisibleItemBuilder(
+                                builder: (context, remainingItemCount) => Chip(
+                                  label: Text("+$remainingItemCount"),
+                                  backgroundColor: Colors.red,
+                                ),
+                                itemCount: _counter,
+                                maxVisibleItemCount: 4,
+                                spacing: -8,
+                                overlapPreviousItem: false,
+                                itemBuilder: (index) => Chip(
+                                  label: Text(
+                                    avatars[index].initials,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  backgroundColor: avatars[index].color,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   ],

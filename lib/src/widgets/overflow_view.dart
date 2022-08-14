@@ -114,12 +114,48 @@ class OverflowView extends MultiChildRenderObjectWidget {
               : OverflowViewLayoutBehavior.wrapWithLeading,
         );
 
+  /// Creates an [OverflowView].
+  ///
+  /// All items (except overflow indicator) will have the same size
+  /// has the first child.
+  ///
+  /// The [spacing] argument must also be finite.
+  OverflowView.limitedVisibleItemBuilder({
+    Key? key,
+    required OverflowIndicatorBuilder builder,
+    Axis direction = Axis.horizontal,
+    required int maxVisibleItemCount,
+    required int itemCount,
+    required Widget Function(int index) itemBuilder,
+    double spacing = 0,
+    bool overlapPreviousItem = true,
+    TextDirection? textDirection,
+  }) : this._all(
+          key: key,
+          builder: builder,
+          direction: direction,
+          maxVisibleItemCount: maxVisibleItemCount,
+          originItemCount: itemCount,
+          children: List.generate(
+            itemCount > maxVisibleItemCount ? maxVisibleItemCount : itemCount,
+            (index) => itemBuilder(index),
+            growable: false,
+          ),
+          spacing: spacing,
+          overlapPreviousItem: overlapPreviousItem,
+          textDirection: textDirection,
+          layoutBehavior:
+              OverflowViewLayoutBehavior.fixedSizeWithLimitedVisibleItem,
+        );
+
   OverflowView._all({
     Key? key,
     required OverflowIndicatorBuilder builder,
     this.direction = Axis.horizontal,
     Widget? leading,
     required List<Widget> children,
+    this.maxVisibleItemCount,
+    this.originItemCount,
     this.alignment = WrapAlignment.start,
     this.spacing = 0,
     this.runAlignment = WrapAlignment.start,
@@ -152,6 +188,12 @@ class OverflowView extends MultiChildRenderObjectWidget {
   /// For example, if [direction] is [Axis.horizontal], the default, the
   /// children are placed adjacent to one another as in a [Row].
   final Axis direction;
+
+  /// The maximum visible items (except overflow indicator)
+  final int? maxVisibleItemCount;
+
+  /// The total number of items
+  final int? originItemCount;
 
   /// How the children within a run should be placed in the main axis.
   ///
@@ -314,6 +356,8 @@ class OverflowView extends MultiChildRenderObjectWidget {
   RenderOverflowView createRenderObject(BuildContext context) {
     return RenderOverflowView(
       direction: direction,
+      originItemCount: originItemCount,
+      maxVisibleItemCount: maxVisibleItemCount,
       alignment: alignment,
       spacing: spacing,
       runAlignment: runAlignment,
@@ -335,6 +379,8 @@ class OverflowView extends MultiChildRenderObjectWidget {
   ) {
     renderObject
       ..direction = direction
+      ..originItemCount = originItemCount
+      ..maxVisibleItemCount = maxVisibleItemCount
       ..alignment = alignment
       ..spacing = spacing
       ..runAlignment = runAlignment
@@ -352,6 +398,10 @@ class OverflowView extends MultiChildRenderObjectWidget {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(EnumProperty<Axis>('direction', direction));
+    if (originItemCount != null)
+      properties.add(IntProperty('originItemCount', originItemCount));
+    if (maxVisibleItemCount != null)
+      properties.add(IntProperty('maxVisibleItemCount', maxVisibleItemCount));
     properties.add(EnumProperty<WrapAlignment>('alignment', alignment));
     properties.add(DoubleProperty('spacing', spacing));
     properties.add(EnumProperty<WrapAlignment>('runAlignment', runAlignment));

@@ -47,6 +47,16 @@ enum OverflowViewLayoutBehavior {
   /// This can be used for an avatar list for example.
   fixed,
 
+  /// All the children (except the last one which is the overflow indicator)
+  /// will be constrained to have the same size as the first one.
+  ///
+  /// The number of visible children is limited.
+  ///
+  /// Places the children in one line.
+  ///
+  /// This can be used for an avatar list for example.
+  fixedSizeWithLimitedVisibleItem,
+
   /// Let all children to determine their own size.
   ///
   /// Places the children in one line.
@@ -77,6 +87,8 @@ class RenderOverflowView extends RenderBox
   RenderOverflowView({
     List<RenderBox>? children,
     required Axis direction,
+    required int? maxVisibleItemCount,
+    required int? originItemCount,
     required WrapAlignment alignment,
     required double spacing,
     required WrapAlignment runAlignment,
@@ -92,6 +104,8 @@ class RenderOverflowView extends RenderBox
         assert(maxRun > 0),
         assert(maxItemPerRun == null || maxItemPerRun > 0),
         _direction = direction,
+        _maxVisibleItemCount = maxVisibleItemCount,
+        _originItemCount = originItemCount,
         _alignment = alignment,
         _spacing = spacing,
         _runAlignment = runAlignment,
@@ -122,6 +136,26 @@ class RenderOverflowView extends RenderBox
   }
 
   bool get _isHorizontal => direction == Axis.horizontal;
+
+  /// The maximum visible items (except overflow indicator)
+  int? get maxVisibleItemCount => _maxVisibleItemCount;
+  int? _maxVisibleItemCount;
+  set maxVisibleItemCount(int? value) {
+    if (_maxVisibleItemCount == value) return;
+
+    _maxVisibleItemCount = value;
+    markNeedsLayout();
+  }
+
+  /// The total number of items
+  int? get originItemCount => _originItemCount;
+  int? _originItemCount;
+  set originItemCount(int? value) {
+    if (_originItemCount == value) return;
+
+    _originItemCount = value;
+    markNeedsLayout();
+  }
 
   /// How the children within a run should be placed in the main axis.
   ///
@@ -475,6 +509,7 @@ class RenderOverflowView extends RenderBox
     resetOffstage();
     switch (layoutBehavior) {
       case OverflowViewLayoutBehavior.fixed:
+      case OverflowViewLayoutBehavior.fixedSizeWithLimitedVisibleItem:
         performFixedLayout();
         break;
       case OverflowViewLayoutBehavior.flexible:
@@ -502,9 +537,10 @@ class RenderOverflowView extends RenderBox
     final double maxExtent =
         _isHorizontal ? constraints.maxWidth : constraints.maxHeight;
 
-    RenderBox child = firstChild!;
+    RenderBox? child = firstChild!;
     OverflowViewParentData childParentData =
         child.parentData as OverflowViewParentData;
+    childParentData.offset = Offset.zero;
     child.layout(childConstraints, parentUsesSize: true);
     final double childExtent = _getMainAxisExtent(child.size);
     final double crossExtent = _getCrossAxisExtent(child.size);
@@ -527,10 +563,14 @@ class RenderOverflowView extends RenderBox
     final int count = childCount - 1;
     final double requestedExtent =
         childExtent * (childCount - 1) + spacing * (childCount - 2);
-    final int renderedChildCount = requestedExtent <= maxExtent
+    int renderedChildCount = requestedExtent <= maxExtent
         ? count
         : (maxExtent + spacing) ~/ childStride - 1;
-    final int unRenderedChildCount = count - renderedChildCount;
+
+    assert(originItemCount == null ||
+        (originItemCount != null && count <= originItemCount!));
+
+    int unRenderedChildCount = (originItemCount ?? count) - renderedChildCount;
     if (renderedChildCount > 0) {
       childParentData.offstage = false;
       onstageCount++;
@@ -545,6 +585,8 @@ class RenderOverflowView extends RenderBox
       onstageCount++;
     }
 
+    RenderBox? lastOnStageChild = child;
+
     while (child != lastChild) {
       child = childParentData.nextSibling!;
       childParentData = child.parentData as OverflowViewParentData;
@@ -555,12 +597,55 @@ class RenderOverflowView extends RenderBox
       // We have to layout the overflow indicator.
       final RenderBox overflowIndicator = lastChild!;
 
-      final BoxValueConstraints<int> overflowIndicatorConstraints =
+      if (layoutBehavior == OverflowViewLayoutBehavior.fixed) {
+        final BoxValueConstraints<int> overflowIndicatorConstraints =
+            BoxValueConstraints<int>(
+          value: unRenderedChildCount,
+          constraints: otherChildConstraints,
+        );
+        overflowIndicator.layout(overflowIndicatorConstraints);
+      } else {
+        // layoutBehavior == OverflowViewLayoutBehavior.fixedSizeWithLimitedVisibleItemCount
+
+        final BoxConstraints overflowIndicatorConstraints =
+            BoxConstraints(maxWidth: constraints.maxWidth);
+
+        final double currentRunMainAxisExtent = onstageCount * childStride;
+        double overflowIndicatorMainAxisLimit = currentRunMainAxisExtent == 0.0
+            ? 0.0
+            : maxExtent - currentRunMainAxisExtent;
+
+        overflowIndicator.layout(
           BoxValueConstraints<int>(
-        value: unRenderedChildCount,
-        constraints: otherChildConstraints,
-      );
-      overflowIndicator.layout(overflowIndicatorConstraints);
+            value: unRenderedChildCount,
+            constraints: overflowIndicatorConstraints,
+          ),
+          parentUsesSize: true,
+        );
+
+        while (renderedChildCount > 0 &&
+            lastOnStageChild != null &&
+            overflowIndicator.size.width > overflowIndicatorMainAxisLimit) {
+          overflowIndicatorMainAxisLimit += childStride;
+          onstageCount--;
+          renderedChildCount--;
+          unRenderedChildCount++;
+
+          overflowIndicator.layout(
+            BoxValueConstraints<int>(
+              value: unRenderedChildCount,
+              constraints: overflowIndicatorConstraints,
+            ),
+            parentUsesSize: true,
+          );
+
+          childParentData =
+              lastOnStageChild.parentData as OverflowViewParentData;
+          childParentData.offstage = true;
+          lastOnStageChild = childParentData.previousSibling;
+        }
+      }
+
       final OverflowViewParentData overflowIndicatorParentData =
           overflowIndicator.parentData as OverflowViewParentData;
       overflowIndicatorParentData.offset = getChildOffset(renderedChildCount);
@@ -568,12 +653,58 @@ class RenderOverflowView extends RenderBox
       onstageCount++;
     }
 
-    final double mainAxisExtent = onstageCount * childStride - spacing;
+    final double mainAxisExtent;
+    if (layoutBehavior ==
+            OverflowViewLayoutBehavior.fixedSizeWithLimitedVisibleItem &&
+        unRenderedChildCount > 0) {
+      mainAxisExtent = (onstageCount - 1) * childStride + lastChild!.size.width;
+    } else {
+      mainAxisExtent = onstageCount * childStride - spacing;
+    }
     final requestedSize = _isHorizontal
         ? Size(mainAxisExtent, crossExtent)
         : Size(crossExtent, mainAxisExtent);
 
     size = constraints.constrain(requestedSize);
+
+    if (textDirection == TextDirection.ltr) return;
+
+    // flip main axis
+
+    double childMainPosition = _isHorizontal ? size.width : size.height;
+
+    child = firstChild!;
+
+    while (child != null) {
+      final OverflowViewParentData childParentData =
+          child.parentData! as OverflowViewParentData;
+
+      if (childParentData.offstage != false) {
+        child = childParentData.nextSibling;
+        continue;
+      }
+
+      final double childMainAxisExtent;
+      if (layoutBehavior == OverflowViewLayoutBehavior.fixed) {
+        childMainAxisExtent = _isHorizontal ? childExtent : crossExtent;
+      } else {
+        // layoutBehavior == OverflowViewLayoutBehavior.fixedSizeWithLimitedVisibleItemCount
+
+        childMainAxisExtent = child == lastChild
+            ? _getMainAxisExtent(child.size)
+            : _isHorizontal
+                ? childExtent
+                : crossExtent;
+      }
+
+      childMainPosition -= childMainAxisExtent;
+
+      childParentData.offset = _getOffset(childMainPosition, 0);
+
+      childMainPosition -= spacing;
+
+      child = childParentData.nextSibling;
+    }
   }
 
   void performFlexibleLayout() {
@@ -1316,6 +1447,7 @@ class RenderOverflowView extends RenderBox
         return freeSpace / 2.0;
     }
   }
+
   void _visitOnlyOnStageChildren(
     RenderObjectVisitor visitor, {
     bool startFromLastChild = false,
@@ -1437,6 +1569,10 @@ class RenderOverflowView extends RenderBox
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(EnumProperty<Axis>('direction', direction));
+    if (originItemCount != null)
+      properties.add(IntProperty('originItemCount', originItemCount));
+    if (maxVisibleItemCount != null)
+      properties.add(IntProperty('maxVisibleItemCount', maxVisibleItemCount));
     properties.add(EnumProperty<WrapAlignment>('alignment', alignment));
     properties.add(DoubleProperty('spacing', spacing));
     properties.add(EnumProperty<WrapAlignment>('runAlignment', runAlignment));
