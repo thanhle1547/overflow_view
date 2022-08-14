@@ -28,6 +28,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
     required List<Widget> children,
     double spacing = 0,
     bool overlapPreviousItem = true,
+    TextDirection? textDirection,
   }) : this._all(
           key: key,
           builder: builder,
@@ -40,6 +41,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
           crossAxisAlignment: WrapCrossAlignment.start,
           maxRun: 1,
           overlapPreviousItem: overlapPreviousItem,
+          textDirection: textDirection,
           verticalDirection: VerticalDirection.down,
           layoutBehavior: OverflowViewLayoutBehavior.fixed,
         );
