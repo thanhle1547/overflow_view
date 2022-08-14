@@ -1,3 +1,7 @@
+## 0.5.1
+### Fixed
+* Remove stacked effect apply to leading widget (when spacing is negative)
+
 ## 0.5.0
 ### Enhancement
 * Add leading to `OverflowView.wrap` constructor
