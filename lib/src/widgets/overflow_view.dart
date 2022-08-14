@@ -27,6 +27,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
     Axis direction = Axis.horizontal,
     required List<Widget> children,
     double spacing = 0,
+    bool overlapPreviousItem = true,
   }) : this._all(
           key: key,
           builder: builder,
@@ -38,6 +39,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
           runSpacing: 0,
           crossAxisAlignment: WrapCrossAlignment.start,
           maxRun: 1,
+          overlapPreviousItem: overlapPreviousItem,
           verticalDirection: VerticalDirection.down,
           layoutBehavior: OverflowViewLayoutBehavior.fixed,
         );
@@ -53,6 +55,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
     Axis direction = Axis.horizontal,
     required List<Widget> children,
     double spacing = 0,
+    bool overlapPreviousItem = true,
   }) : this._all(
           key: key,
           builder: builder,
@@ -64,6 +67,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
           runSpacing: 0,
           crossAxisAlignment: WrapCrossAlignment.start,
           maxRun: 1,
+          overlapPreviousItem: overlapPreviousItem,
           verticalDirection: VerticalDirection.down,
           layoutBehavior: OverflowViewLayoutBehavior.flexible,
         );
@@ -86,6 +90,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
     WrapCrossAlignment crossAxisAlignment = WrapCrossAlignment.start,
     int maxRun = 1,
     int? maxItemPerRun,
+    bool overlapPreviousItem = true,
     TextDirection? textDirection,
     VerticalDirection verticalDirection = VerticalDirection.down,
   }) : this._all(
@@ -101,6 +106,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
           crossAxisAlignment: crossAxisAlignment,
           maxRun: maxRun,
           maxItemPerRun: maxItemPerRun,
+          overlapPreviousItem: overlapPreviousItem,
           textDirection: textDirection,
           verticalDirection: verticalDirection,
           layoutBehavior: leading == null
@@ -121,6 +127,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
     this.crossAxisAlignment = WrapCrossAlignment.start,
     this.maxRun = 1,
     this.maxItemPerRun,
+    this.overlapPreviousItem = true,
     this.textDirection,
     this.verticalDirection = VerticalDirection.down,
     required OverflowViewLayoutBehavior layoutBehavior,
@@ -231,6 +238,17 @@ class OverflowView extends MultiChildRenderObjectWidget {
   /// A maximum number of columns (the item in each run).
   final int? maxItemPerRun;
 
+  /// Only available when [spacing] is a negative value.
+  ///
+  /// When [textDirection] is [TextDirection.ltr], the item on the right
+  /// will overlap the one on the left, i.e. each item will be stacked from
+  /// bottom to top. Vice versa, when [textDirection] is [TextDirection.rtl],
+  /// the item on the left will overlap the one on the right, i.e. each item
+  /// will be stacked from top to bottom.
+  ///
+  /// Defaults to `true`.
+  final bool overlapPreviousItem;
+
   /// Determines the order to lay children out horizontally and how to interpret
   /// `start` and `end` in the horizontal direction.
   ///
@@ -303,6 +321,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
       crossAxisAlignment: crossAxisAlignment,
       maxRun: maxRun,
       maxItemPerRun: maxItemPerRun,
+      overlapPreviousItem: overlapPreviousItem,
       textDirection: textDirection ?? Directionality.maybeOf(context),
       verticalDirection: verticalDirection,
       layoutBehavior: _layoutBehavior,
@@ -323,6 +342,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
       ..crossAxisAlignment = crossAxisAlignment
       ..maxRun = maxRun
       ..maxItemPerRun = maxItemPerRun
+      ..overlapPreviousItem = overlapPreviousItem
       ..textDirection = textDirection ?? Directionality.maybeOf(context)
       ..verticalDirection = verticalDirection
       ..layoutBehavior = _layoutBehavior;
@@ -345,6 +365,17 @@ class OverflowView extends MultiChildRenderObjectWidget {
       'maxItemPerRun',
       maxItemPerRun,
       defaultValue: null,
+    ));
+    properties.add(FlagProperty(
+      'overlapPreviousItem',
+      value: spacing.isNegative && overlapPreviousItem,
+      ifFalse: 'Only available when [spacing] is a negative value',
+      ifTrue: textDirection == TextDirection.ltr
+          ? 'the item on the right overlap the one on the left, '
+              'i.e. each item will be stacked from bottom to top'
+          : 'the item on the left overlap the one on the right, '
+              'i.e. each item will be stacked from top to bottom',
+      defaultValue: true,
     ));
     properties.add(EnumProperty<TextDirection>(
       'textDirection',

@@ -84,6 +84,7 @@ class RenderOverflowView extends RenderBox
     required WrapCrossAlignment crossAxisAlignment,
     required int maxRun,
     required int? maxItemPerRun,
+    required bool overlapPreviousItem,
     TextDirection? textDirection,
     required VerticalDirection verticalDirection,
     required OverflowViewLayoutBehavior layoutBehavior,
@@ -98,6 +99,7 @@ class RenderOverflowView extends RenderBox
         _crossAxisAlignment = crossAxisAlignment,
         _maxRun = maxRun,
         _maxItemPerRun = maxItemPerRun,
+        _overlapPreviousItem = overlapPreviousItem,
         _textDirection = textDirection,
         _verticalDirection = verticalDirection,
         _layoutBehavior = layoutBehavior {
@@ -254,6 +256,24 @@ class RenderOverflowView extends RenderBox
 
     _maxItemPerRun = value;
     markNeedsLayout();
+  }
+
+  /// Only available when [spacing] is a negative value.
+  ///
+  /// When [textDirection] is [TextDirection.ltr], the item on the right
+  /// will overlap the one on the left, i.e. each item will be stacked from
+  /// bottom to top. Vice versa, when [textDirection] is [TextDirection.rtl],
+  /// the item on the left will overlap the one on the right, i.e. each item
+  /// will be stacked from top to bottom.
+  ///
+  /// Defaults to `true`.
+  bool get overlapPreviousItem => _overlapPreviousItem;
+  bool _overlapPreviousItem;
+  set overlapPreviousItem(bool value) {
+    if (_overlapPreviousItem == value) return;
+
+    _overlapPreviousItem = value;
+    markNeedsPaint();
   }
 
   /// Determines the order to lay children out horizontally and how to interpret
@@ -1296,15 +1316,31 @@ class RenderOverflowView extends RenderBox
         return freeSpace / 2.0;
     }
   }
-
-  void visitOnlyOnStageChildren(RenderObjectVisitor visitor) {
-    visitChildren((child) {
+  void _visitOnlyOnStageChildren(
+    RenderObjectVisitor visitor, {
+    bool startFromLastChild = false,
+  }) {
+    RenderBox? child = startFromLastChild ? lastChild : firstChild;
+    while (child != null) {
       final OverflowViewParentData childParentData =
           child.parentData! as OverflowViewParentData;
+
       if (childParentData.offstage == false) {
         visitor(child);
       }
-    });
+
+      child = startFromLastChild
+          ? childParentData.previousSibling
+          : childParentData.nextSibling;
+    }
+  }
+
+  void visitOnlyOnStageChildren(RenderObjectVisitor visitor) {
+    if (!spacing.isNegative || overlapPreviousItem) {
+      _visitOnlyOnStageChildren(visitor);
+    } else {
+      _visitOnlyOnStageChildren(visitor, startFromLastChild: true);
+    }
   }
 
   void _visitTheFirstAndTheOnlyOnStageChildReportedHitTest(
@@ -1327,7 +1363,7 @@ class RenderOverflowView extends RenderBox
   }
 
   void _visitFirstChildReportedHitTest(_ReportRenderObjectVisitor visitor) {
-    if (!spacing.isNegative) {
+    if (!spacing.isNegative || !overlapPreviousItem) {
       _visitTheFirstAndTheOnlyOnStageChildReportedHitTest(visitor);
     } else {
       _visitTheFirstAndTheOnlyOnStageChildReportedHitTest(
@@ -1411,6 +1447,17 @@ class RenderOverflowView extends RenderBox
       'maxItemPerRun',
       maxItemPerRun,
       defaultValue: null,
+    ));
+    properties.add(FlagProperty(
+      'overlapPreviousItem',
+      value: spacing.isNegative && overlapPreviousItem,
+      ifFalse: 'Only available when [spacing] is a negative value',
+      ifTrue: textDirection == TextDirection.ltr
+          ? 'the item on the right overlap the one on the left, '
+              'i.e. each item will be stacked from bottom to top'
+          : 'the item on the left overlap the one on the right, '
+              'i.e. each item will be stacked from top to bottom',
+      defaultValue: true,
     ));
     properties.add(EnumProperty<TextDirection>(
       'textDirection',
