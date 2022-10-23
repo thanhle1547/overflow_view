@@ -90,7 +90,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
     WrapAlignment runAlignment = WrapAlignment.start,
     double runSpacing = 0.0,
     WrapCrossAlignment crossAxisAlignment = WrapCrossAlignment.start,
-    int maxRun = 1,
+    int? maxRun,
     int? maxItemPerRun,
     bool overlapPreviousItem = true,
     TextDirection? textDirection,
@@ -163,7 +163,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
     this.runAlignment = WrapAlignment.start,
     this.runSpacing = 0.0,
     this.crossAxisAlignment = WrapCrossAlignment.start,
-    this.maxRun = 1,
+    this.maxRun,
     this.maxItemPerRun,
     this.overlapPreviousItem = true,
     this.textDirection,
@@ -277,7 +277,7 @@ class OverflowView extends MultiChildRenderObjectWidget {
   final WrapCrossAlignment crossAxisAlignment;
 
   /// A maximum number of rows (the runs).
-  final int maxRun;
+  final int? maxRun;
 
   /// A maximum number of columns (the item in each run).
   final int? maxItemPerRun;

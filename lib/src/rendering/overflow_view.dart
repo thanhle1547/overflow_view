@@ -94,14 +94,14 @@ class RenderOverflowView extends RenderBox
     required WrapAlignment runAlignment,
     required double runSpacing,
     required WrapCrossAlignment crossAxisAlignment,
-    required int maxRun,
+    required int? maxRun,
     required int? maxItemPerRun,
     required bool overlapPreviousItem,
     TextDirection? textDirection,
     required VerticalDirection verticalDirection,
     required OverflowViewLayoutBehavior layoutBehavior,
   })  : assert(spacing > double.negativeInfinity && spacing < double.infinity),
-        assert(maxRun > 0),
+        assert(maxRun == null || maxRun > 0),
         assert(maxItemPerRun == null || maxItemPerRun > 0),
         _direction = direction,
         _maxVisibleItemCount = maxVisibleItemCount,
@@ -269,10 +269,10 @@ class RenderOverflowView extends RenderBox
   }
 
   /// A maximum number of rows (the runs).
-  int get maxRun => _maxRun;
-  int _maxRun;
-  set maxRun(int value) {
-    assert(value > 0);
+  int? get maxRun => _maxRun;
+  int? _maxRun;
+  set maxRun(int? value) {
+    assert(value == null || value > 0);
 
     if (_maxRun == value) return;
 
@@ -945,7 +945,9 @@ class RenderOverflowView extends RenderBox
             crossAxisExtent + childCrossAxisExtent + runSpacing >
                 crossAxisLimit) {
           // We have no room to paint any further child.
-          if (maxRun == 1 && runMetrics.last.childCount == 1 && hasLeading)
+          if (hasLeading &&
+              runMetrics.length == 1 &&
+              runMetrics.last.childCount == 1)
             showOverflowIndicator = false;
           else
             showOverflowIndicator = true;
@@ -1032,8 +1034,9 @@ class RenderOverflowView extends RenderBox
 
       double overflowIndicatorMainAxisStride;
 
-      final bool onlyLeadingIsAvailable =
-          hasLeading && maxRun == 1 && runMetrics.last.childCount == 1;
+      final bool onlyLeadingIsAvailable = hasLeading &&
+          runMetrics.length == 1 &&
+          runMetrics.last.childCount == 1;
 
       if (onlyLeadingIsAvailable) {
         overflowIndicatorMainAxisStride = overflowIndicatorMainAxisExtent;
