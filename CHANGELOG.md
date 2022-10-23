@@ -1,3 +1,8 @@
+## 0.8.0
+### Enhancement
+* Make `maxRun` nullable
+* Change the `maxRun` default value to null
+
 ## 0.7.0
 ### Enhancement
 * Implement limiting visible items
